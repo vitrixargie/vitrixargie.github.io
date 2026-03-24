@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vitrix Argie — Perspectives & Analysis</title>
+  <title>Vitrix Argie — Unified Edition</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,26 +15,19 @@
       --fg: #f5f5f0;
       --fg-muted: #a8a8a0;
       --accent: #d4a84b;
-      --accent-dim: #b8923f;
       --border: #2a2a2a;
-      --card: #0f0f0f;
+      --sidebar-width: 260px;
+      --essay-width: 55%; /* Width of sliding panel */
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html {
-      scroll-behavior: smooth;
-    }
+    html { scroll-behavior: smooth; }
 
     @media (prefers-reduced-motion: reduce) {
-      html {
-        scroll-behavior: auto;
-      }
-      *, *::before, *::after {
+      html { scroll-behavior: auto; }
+      * {
         animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
       }
     }
@@ -45,212 +38,198 @@
       color: var(--fg);
       line-height: 1.8;
       font-size: 18px;
+      overflow: hidden; /* Essential for snap scroll */
+      height: 100vh;
     }
 
-    .font-sans {
-      font-family: 'Inter', system-ui, sans-serif;
-    }
+    .font-sans { font-family: 'Inter', sans-serif; }
 
-    /* Scrollbar styling */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: var(--bg);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--accent-dim);
-    }
-
-    /* Selection */
-    ::selection {
-      background: var(--accent);
-      color: var(--bg);
-    }
-
-    /* Custom underline */
-    .accent-underline {
-      background-image: linear-gradient(to right, var(--accent) 0%, var(--accent) 100%);
-      background-repeat: no-repeat;
-      background-position: left bottom;
-      background-size: 100% 2px;
-    }
-
-    /* Article expansion */
-    .article-content {
-      max-height: 0;
+    /* --- Core Layout --- */
+    .app-wrapper {
+      position: relative;
+      height: 100vh;
+      width: 100%;
       overflow: hidden;
-      transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .article-content.expanded {
-      max-height: 5000px;
+    /* --- Parallax Effect Container --- */
+    .main-content-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+      z-index: 1;
+      will-change: transform;
     }
 
-    /* Entrance animations */
-    @keyframes fadeSlideUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    /* When essay is open, shift content left */
+    body.essay-open .main-content-wrapper {
+      transform: translateX(calc(-1 * var(--essay-width)));
+      opacity: 0.5;
+      pointer-events: none;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    /* --- Sidebar --- */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      z-index: 100;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
     }
 
-    @keyframes slideInLeft {
-      from {
-        opacity: 0;
-        transform: translateX(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
+    .sidebar-collapsed .sidebar {
+      transform: translateX(-100%);
     }
 
-    .animate-entrance {
-      animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    /* Sidebar Link Animation */
+    .nav-link {
       opacity: 0;
+      transform: translateX(-20px);
+      transition: opacity 0.5s ease, transform 0.5s ease, color 0.2s, background 0.2s, border-color 0.2s;
     }
-
-    .animate-slide-left {
-      animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      opacity: 0;
+    
+    .sidebar.animated .nav-link {
+      opacity: 1;
+      transform: translateX(0);
     }
 
     /* Stagger delays */
-    .delay-1 { animation-delay: 0.1s; }
-    .delay-2 { animation-delay: 0.2s; }
-    .delay-3 { animation-delay: 0.3s; }
-    .delay-4 { animation-delay: 0.4s; }
-    .delay-5 { animation-delay: 0.5s; }
-    .delay-6 { animation-delay: 0.6s; }
+    .nav-link:nth-child(1) { transition-delay: 0.1s; }
+    .nav-link:nth-child(2) { transition-delay: 0.15s; }
+    .nav-link:nth-child(3) { transition-delay: 0.2s; }
+    .nav-link:nth-child(4) { transition-delay: 0.25s; }
+    .nav-link:nth-child(5) { transition-delay: 0.3s; }
 
-    /* Button styles */
-    .btn-read-more {
+    /* --- Snap Scroll --- */
+    .snap-container {
+      height: 100vh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+      margin-left: var(--sidebar-width);
+      background: var(--bg);
+    }
+
+    .sidebar-collapsed .snap-container {
+      margin-left: 0;
+    }
+
+    .snap-section {
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      height: 100vh;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       position: relative;
+    }
+
+    /* --- Essay Sliding Panel --- */
+    .essay-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: var(--essay-width);
+      height: 100vh;
+      background: var(--bg-elevated);
+      border-left: 1px solid var(--accent);
+      transform: translateX(100%);
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 150;
+      overflow-y: auto;
+      box-shadow: -10px 0 40px rgba(0,0,0,0.6);
+    }
+
+    body.essay-open .essay-panel {
+      transform: translateX(0);
+    }
+
+    /* --- Scroll-Triggered Animations --- */
+    .anim-item {
+      opacity: 0;
+      transform: translateY(50px);
+      transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), 
+                  transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .section-in-view .anim-item {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .anim-item:nth-child(1) { transition-delay: 0.1s; }
+    .anim-item:nth-child(2) { transition-delay: 0.2s; }
+    .anim-item:nth-child(3) { transition-delay: 0.3s; }
+    .anim-item:nth-child(4) { transition-delay: 0.4s; }
+
+    /* --- UI Elements --- */
+    .btn-read-more {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px 0;
+      gap: 10px;
+      padding: 14px 28px;
       font-family: 'Inter', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--accent);
-      border: none;
-      background: none;
-      cursor: pointer;
-      transition: color 0.3s ease;
-    }
-
-    .btn-read-more::after {
-      content: '';
-      position: absolute;
-      bottom: 8px;
-      left: 0;
-      width: 100%;
-      height: 1px;
+      color: var(--bg);
       background: var(--accent);
-      transform: scaleX(0);
-      transform-origin: right;
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-read-more:hover {
+      background: #fff;
+      color: var(--bg);
+      transform: translateX(5px);
     }
 
-    .btn-read-more:hover::after,
-    .btn-read-more:focus::after {
-      transform: scaleX(1);
-      transform-origin: left;
-    }
-
-    .btn-read-more:focus {
-      outline: 2px solid var(--accent);
-      outline-offset: 4px;
-    }
-
-    .btn-read-more svg {
-      transition: transform 0.3s ease;
-    }
-
-    .btn-read-more.expanded svg {
-      transform: rotate(180deg);
-    }
-
-    /* Nav button */
     .nav-btn {
       display: flex;
       align-items: center;
       gap: 12px;
       width: 100%;
-      padding: 14px 16px;
+      padding: 14px 24px;
       font-family: 'Inter', sans-serif;
       font-size: 12px;
-      font-weight: 400;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
       color: var(--fg-muted);
       background: transparent;
-      border: 1px solid transparent;
-      border-radius: 4px;
+      border-left: 2px solid transparent;
       cursor: pointer;
-      transition: all 0.3s ease;
       text-align: left;
+      margin-bottom: 4px;
     }
-
-    .nav-btn:hover,
-    .nav-btn:focus {
-      color: var(--fg);
-      background: var(--bg-elevated);
-      border-color: var(--border);
-    }
-
-    .nav-btn:focus {
-      outline: none;
-      border-color: var(--accent-dim);
-    }
-
+    .nav-btn:hover { color: var(--fg); background: rgba(255,255,255,0.02); }
     .nav-btn.active {
       color: var(--accent);
-      background: var(--bg-elevated);
-      border-color: var(--accent-dim);
+      border-left-color: var(--accent);
+      background: rgba(212, 168, 75, 0.05);
     }
 
-    /* Article card */
-    .article-card {
-      position: relative;
-      padding: 32px 0;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.3s ease;
-    }
-
-    .article-card:hover {
-      background: linear-gradient(to right, transparent, var(--bg-elevated) 50%, transparent);
-    }
-
-    /* Drop cap */
+    /* --- Magazine Typography --- */
     .drop-cap::first-letter {
       float: left;
-      font-size: 4.5em;
-      line-height: 0.8;
+      font-size: 5em;
+      line-height: 0.7;
       padding-right: 12px;
-      padding-top: 8px;
+      padding-top: 6px;
       font-weight: 600;
       color: var(--accent);
     }
 
-    /* Quote styling */
     .article-quote {
       position: relative;
       padding-left: 24px;
@@ -259,519 +238,372 @@
       color: var(--fg-muted);
       border-left: 2px solid var(--accent);
     }
-
-    /* Tag styling */
-    .article-tag {
-      display: inline-block;
-      padding: 4px 12px;
-      font-family: 'Inter', sans-serif;
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      color: var(--fg-muted);
+    
+    .section-title {
+      font-size: 4.5rem;
+      font-weight: 600;
+      line-height: 1.1;
     }
 
-    /* Background pattern */
-    .bg-pattern {
-      background-image: 
-        radial-gradient(circle at 20% 80%, rgba(212, 168, 75, 0.03) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(212, 168, 75, 0.02) 0%, transparent 40%);
-    }
-
-    /* Grid lines decoration */
-    .grid-lines {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.03;
-      background-image: 
-        linear-gradient(to right, var(--fg) 1px, transparent 1px),
-        linear-gradient(to bottom, var(--fg) 1px, transparent 1px);
-      background-size: 80px 80px;
-    }
-
-    /* Mobile menu */
-    .mobile-menu-btn {
-      display: none;
-    }
-
-    @media (max-width: 1024px) {
+    /* Mobile adjustments */
+    @media (max-width: 1023px) {
       .sidebar {
-        position: fixed;
-        left: -280px;
-        top: 0;
-        bottom: 0;
-        z-index: 100;
-        transition: left 0.3s ease;
+        transform: translateX(-100%);
+        z-index: 200;
       }
-      
       .sidebar.open {
-        left: 0;
+        transform: translateX(0);
       }
-
-      .sidebar-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.8);
-        z-index: 90;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s ease;
+      .snap-container {
+        margin-left: 0;
       }
-
-      .sidebar-overlay.open {
-        opacity: 1;
-        pointer-events: auto;
+      .essay-panel {
+        width: 100%;
       }
-
-      .mobile-menu-btn {
-        display: flex;
+      body.essay-open .main-content-wrapper {
+        transform: translateX(-40%);
+        opacity: 0.2;
+      }
+      .section-title {
+        font-size: 3rem;
       }
     }
-
-    /* Focus visible */
-    :focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
+    
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); }
   </style>
 </head>
-<body class="bg-pattern min-h-screen">
-  <!-- Grid decoration -->
-  <div class="grid-lines" aria-hidden="true"></div>
+<body>
 
-  <!-- Mobile overlay -->
-  <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+  <!-- App Wrapper -->
+  <div class="app-wrapper">
+    
+    <!-- Main Content (Shifts on Essay Open) -->
+    <div class="main-content-wrapper">
+      <!-- Sidebar Overlay (Mobile) -->
+      <div class="sidebar-overlay fixed inset-0 bg-black/70 z-[150] opacity-0 pointer-events-none transition-opacity lg:hidden" id="sidebarOverlay"></div>
 
-  <!-- Left Sidebar Navigation -->
-  <aside class="sidebar fixed left-0 top-0 bottom-0 w-64 bg-[var(--bg)] border-r border-[var(--border)] flex flex-col z-50" id="sidebar">
-    <div class="p-8 border-b border-[var(--border)]">
-      <h1 class="animate-slide-left">
-        <a href="#" class="block text-2xl font-semibold tracking-tight" style="font-family: 'Cormorant Garamond', serif;">
-          Vitrix Argie
-        </a>
-      </h1>
-      <p class="font-sans text-xs text-[var(--fg-muted)] mt-2 tracking-widest uppercase animate-slide-left delay-1">
-        Perspectives & Analysis
-      </p>
-    </div>
+      <!-- Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <div class="p-8 border-b border-[var(--border)]">
+          <h1 class="nav-link">
+            <a href="#" class="block text-2xl font-semibold tracking-tight">Vitrix Argie</a>
+          </h1>
+          <p class="nav-link font-sans text-xs text-[var(--fg-muted)] mt-2 tracking-widest uppercase">
+            Perspectives & Analysis
+          </p>
+        </div>
 
-    <nav class="flex-1 p-4 overflow-y-auto" aria-label="Main navigation">
-      <div class="space-y-1">
-        <button class="nav-btn active animate-slide-left delay-2" data-section="latest" aria-current="page">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/>
-            <path d="M18 14h-8M15 18h-5M10 6h8v4h-8V6z"/>
-          </svg>
-          Latest Essays
-        </button>
+        <nav class="flex-1 py-6 overflow-y-auto" aria-label="Sections">
+          <div class="px-4">
+            <button class="nav-btn nav-link active" data-target="intro">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+              Welcome
+            </button>
+            <button class="nav-btn nav-link" data-target="geopolitics">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg>
+              Geopolitics
+            </button>
+            <button class="nav-btn nav-link" data-target="economy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              Economy
+            </button>
+            <button class="nav-btn nav-link" data-target="internal-politics">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              Internal Politics
+            </button>
+          </div>
+        </nav>
+        
+        <div class="p-4 border-t border-[var(--border)] nav-link">
+           <p class="font-sans text-[10px] text-[var(--fg-muted)] mt-3 px-4 leading-relaxed">
+            Thoughtful discourse welcomed at<br>
+            <span class="text-[var(--accent)]">argie@vitrix.pub</span>
+          </p>
+        </div>
+      </aside>
 
-        <button class="nav-btn animate-slide-left delay-3" data-section="philosophy">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 16v-4M12 8h.01"/>
-          </svg>
-          Philosophy
-        </button>
+      <!-- Snap Container -->
+      <main class="snap-container" id="snapContainer">
+        
+        <!-- Intro Section -->
+        <section id="intro" class="snap-section border-b border-[var(--border)] bg-pattern">
+          <div class="max-w-3xl text-center px-4">
+            <div class="anim-item">
+              <span class="font-sans text-xs tracking-widest uppercase text-[var(--accent)]">Volume XII — Issue 47</span>
+            </div>
+            <h2 class="anim-item text-5xl lg:text-7xl font-semibold mt-6 leading-tight">
+              Nuance in a Noisy Age
+            </h2>
+            <p class="anim-item text-xl text-[var(--fg-muted)] mt-8 leading-relaxed">
+              Long-form essays on power, markets, and the architecture of society. Curated for the discriminating reader.
+            </p>
+            <div class="anim-item mt-12">
+              <button class="btn-read-more" onclick="document.getElementById('geopolitics').scrollIntoView({behavior: 'smooth'})">
+                Begin Reading
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 5v14M19 12l-7 7-7-7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
 
-        <button class="nav-btn animate-slide-left delay-4" data-section="technology">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="4" y="4" width="16" height="16" rx="2"/>
-            <rect x="9" y="9" width="6" height="6"/>
-            <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
-          </svg>
-          Technology
-        </button>
+        <!-- Geopolitics Section -->
+        <section id="geopolitics" class="snap-section bg-[#080808] border-b border-[var(--border)]">
+          <div class="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-16 items-center px-8">
+            <div class="anim-item">
+              <span class="font-sans text-xs tracking-widest uppercase text-[var(--accent)] opacity-50">Section I</span>
+              <h2 class="section-title mt-2">Geopolitics</h2>
+              <div class="w-24 h-px bg-[var(--accent)] my-6"></div>
+              <p class="text-[var(--fg-muted)] text-lg leading-relaxed">
+                Analysis of the shifting tectonic plates of global power. From the resurgence of great power competition to the silent wars of infrastructure and influence.
+              </p>
+            </div>
+            <div class="bg-[var(--bg)] border border-[var(--border)] p-8 rounded-sm anim-item">
+              <p class="font-sans text-xs text-[var(--accent)] mb-4 tracking-wider">FEATURED ESSAY</p>
+              <h3 class="text-2xl font-semibold mb-4 leading-snug">The Silk Road Reimagined: Infrastructure as Modern Imperium</h3>
+              <p class="text-[var(--fg-muted)] mb-8">
+                A deep analysis of how physical infrastructure projects are reshaping the balance of power in Central Asia...
+              </p>
+              <button class="btn-read-more" data-article="geo-1">
+                Read Full Essay
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
 
-        <button class="nav-btn animate-slide-left delay-5" data-section="society">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
-          </svg>
-          Society
-        </button>
+        <!-- Economy Section -->
+        <section id="economy" class="snap-section border-b border-[var(--border)]">
+          <div class="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-16 items-center px-8">
+            <div class="order-2 lg:order-1 bg-[var(--bg)] border border-[var(--border)] p-8 rounded-sm anim-item">
+              <p class="font-sans text-xs text-[var(--accent)] mb-4 tracking-wider">FEATURED ESSAY</p>
+              <h3 class="text-2xl font-semibold mb-4 leading-snug">The Cost of Certainty: Central Banking in an Age of Fragility</h3>
+              <p class="text-[var(--fg-muted)] mb-8">
+                Central bankers have been elevated to the status of high priests. But what happens when the models fail?
+              </p>
+              <button class="btn-read-more" data-article="eco-1">
+                Read Full Essay
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+            <div class="order-1 lg:order-2 anim-item text-right">
+              <span class="font-sans text-xs tracking-widest uppercase text-[var(--accent)] opacity-50">Section II</span>
+              <h2 class="section-title mt-2">Economy</h2>
+              <div class="w-24 h-px bg-[var(--accent)] my-6 ml-auto"></div>
+              <p class="text-[var(--fg-muted)] text-lg leading-relaxed">
+                Beyond the tickers and trends. A deeper look at the systems that underpin our collective wealth and the fissures forming in the foundation.
+              </p>
+            </div>
+          </div>
+        </section>
 
-        <button class="nav-btn animate-slide-left delay-6" data-section="archive">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/>
-          </svg>
-          Archive
-        </button>
-      </div>
-    </nav>
+        <!-- Internal Politics Section -->
+        <section id="internal-politics" class="snap-section bg-[#080808]">
+          <div class="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-16 items-center px-8">
+            <div class="anim-item">
+              <span class="font-sans text-xs tracking-widest uppercase text-[var(--accent)] opacity-50">Section III</span>
+              <h2 class="section-title mt-2">Internal Politics</h2>
+              <div class="w-24 h-px bg-[var(--accent)] my-6"></div>
+              <p class="text-[var(--fg-muted)] text-lg leading-relaxed">
+                The forces shaping our societies from within. Electoral shifts, cultural fragmentation, and the struggle for the soul of the polity.
+              </p>
+            </div>
+            <div class="bg-[var(--bg)] border border-[var(--border)] p-8 rounded-sm anim-item">
+              <p class="font-sans text-xs text-[var(--accent)] mb-4 tracking-wider">FEATURED ESSAY</p>
+              <h3 class="text-2xl font-semibold mb-4 leading-snug">The Hollow Center: The Collapse of the Moderate Consensus</h3>
+              <p class="text-[var(--fg-muted)] mb-8">
+                Voters are fleeing to the fringes, seeking radical solutions to systemic problems.
+              </p>
+              <button class="btn-read-more" data-article="pol-1">
+                Read Full Essay
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
 
-    <div class="p-4 border-t border-[var(--border)]">
-      <button class="nav-btn w-full animate-slide-left delay-6" id="contactBtn" aria-label="Send email">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-          <path d="M22 6l-10 7L2 6"/>
+      </main>
+    </div> <!-- End Main Content Wrapper -->
+
+    <!-- Sliding Essay Panel -->
+    <aside class="essay-panel p-8 lg:p-12" id="essayPanel" aria-hidden="true">
+      <button class="absolute top-6 right-6 p-2 text-[var(--fg-muted)] hover:text-[var(--accent)] transition-colors z-10" id="closeEssay" aria-label="Close essay">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M18 6L6 18M6 6l12 12"/>
         </svg>
-        Correspondence
       </button>
-      <p class="font-sans text-[10px] text-[var(--fg-muted)] mt-3 px-4 leading-relaxed">
-        Thoughtful discourse welcomed at<br>
-        <span class="text-[var(--accent)]">argie@vitrix.pub</span>
-      </p>
-    </div>
-  </aside>
+      <div id="essayContent" class="mt-12 pr-4">
+        <!-- Injected via JS -->
+      </div>
+    </aside>
 
-  <!-- Mobile Menu Button -->
-  <button class="mobile-menu-btn fixed top-4 left-4 z-[110] p-3 bg-[var(--bg)] border border-[var(--border)] rounded" id="mobileMenuBtn" aria-label="Toggle menu" aria-expanded="false">
+  </div> <!-- End App Wrapper -->
+
+  <!-- Toggle Button -->
+  <button class="fixed top-6 left-4 z-[200] p-2 bg-[var(--bg)] border border-[var(--border)] rounded hover:border-[var(--accent)] transition-colors" id="menuToggle" aria-label="Toggle menu">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <path d="M3 12h18M3 6h18M3 18h18"/>
     </svg>
   </button>
 
-  <!-- Main Content -->
-  <main class="lg:ml-64 min-h-screen relative z-10">
-    <!-- Header -->
-    <header class="border-b border-[var(--border)] px-6 lg:px-12 py-6">
-      <div class="flex items-center justify-between">
-        <div class="animate-entrance">
-          <p class="font-sans text-xs text-[var(--fg-muted)] tracking-widest uppercase">
-            Volume XII — Issue 47
-          </p>
-          <p class="font-sans text-xs text-[var(--accent)] mt-1">
-            December 2024
-          </p>
-        </div>
-        <div class="animate-entrance delay-1 hidden sm:block">
-          <p class="font-sans text-xs text-[var(--fg-muted)] text-right">
-            Long-form essays for the<br>discriminating reader
-          </p>
-        </div>
-      </div>
-    </header>
-
-    <!-- Featured Section -->
-    <section class="px-6 lg:px-12 py-12 border-b border-[var(--border)]" aria-labelledby="featured-heading">
-      <div class="max-w-4xl mx-auto">
-        <p class="font-sans text-xs text-[var(--accent)] tracking-widest uppercase mb-4 animate-entrance">
-          Featured Essay
-        </p>
-        <h2 id="featured-heading" class="text-4xl lg:text-5xl font-semibold leading-tight mb-6 animate-entrance delay-1">
-          On the Architecture of Thought: How Physical Spaces Shape Intellectual Production
-        </h2>
-        <p class="text-lg text-[var(--fg-muted)] leading-relaxed animate-entrance delay-2">
-          An exploration of the relationship between built environments and the quality of intellectual output, drawing from historical precedents and contemporary neuroscience.
-        </p>
-      </div>
-    </section>
-
-    <!-- Articles Grid -->
-    <section class="px-6 lg:px-12 py-12" aria-labelledby="articles-heading">
-      <h2 id="articles-heading" class="sr-only">Recent Articles</h2>
-      
-      <div class="max-w-5xl mx-auto" id="articlesContainer">
-        <!-- Articles will be rendered here -->
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="border-t border-[var(--border)] px-6 lg:px-12 py-8 mt-12">
-      <div class="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <p class="font-sans text-xs text-[var(--fg-muted)]">
-          Vitrix Argie — Established MMXXIV
-        </p>
-        <p class="font-sans text-xs text-[var(--fg-muted)]">
-          All prose composed with deliberate intention
-        </p>
-      </div>
-    </footer>
-  </main>
-
-  <!-- Contact Modal -->
-  <div class="fixed inset-0 z-[200] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300" id="contactModal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="absolute inset-0 bg-black/80" id="modalBackdrop"></div>
-    <div class="relative bg-[var(--bg-elevated)] border border-[var(--border)] rounded p-8 max-w-md w-full transform scale-95 transition-transform duration-300" id="modalContent">
-      <button class="absolute top-4 right-4 p-2 text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors" id="closeModal" aria-label="Close modal">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M18 6L6 18M6 6l12 12"/>
-        </svg>
-      </button>
-      <h3 id="modal-title" class="text-2xl font-semibold mb-2">Correspondence</h3>
-      <p class="text-[var(--fg-muted)] mb-6">For substantive inquiries and thoughtful discourse:</p>
-      <div class="bg-[var(--bg)] border border-[var(--border)] rounded p-4">
-        <p class="font-sans text-sm text-[var(--accent)]">argie@vitrix.pub</p>
-      </div>
-      <p class="font-sans text-xs text-[var(--fg-muted)] mt-4">
-        Response time: Approximately 48-72 hours for considered replies.
-      </p>
-    </div>
-  </div>
-
   <script>
-    // Article Data
-    const articles = [
-      {
-        id: 1,
-        title: "The Paradox of Expertise: When Knowledge Becomes Blindness",
-        date: "December 14, 2024",
-        category: "Philosophy",
-        readTime: "18 min read",
-        summary: "An examination of how specialized knowledge can create intellectual blind spots, and what the polymaths of history understood about maintaining cognitive flexibility.",
-        content: `<p class="drop-cap">The accumulation of expertise has long been celebrated as the pinnacle of intellectual achievement. Yet a curious paradox emerges when we examine the biographies of history's most profound thinkers: their greatest insights often came not from deepening their specialization, but from deliberately stepping outside it.</p>
-        
-        <p>Consider the case of Henri Poincaré, whose contributions to mathematics, physics, and philosophy stemmed not from narrow focus but from his habit of working on multiple problems simultaneously. When stuck on a mathematical proof, he would abandon it entirely for weeks, occupying himself with biological research or geological fieldwork. Upon returning, the solution often presented itself with remarkable clarity.</p>
-        
-        <p class="article-quote">"The scientist does not study nature because it is useful to do so. He studies it because he takes pleasure in it, and he takes pleasure in it because it is beautiful." — Henri Poincaré</p>
-        
-        <p>This phenomenon, which we might term "cognitive cross-pollination," suggests that expertise carries within it a fundamental tension. The very neural pathways that allow for rapid, expert judgment can become rigid channels that prevent novel connections. The expert knows what to look for—and in doing so, may miss entirely what they do not expect.</p>
-        
-        <p>Modern neuroscience supports this observation. Studies of expert decision-makers reveal that as expertise develops, the brain increasingly relies on pattern recognition rather than deliberate analysis. This is efficient, but it comes at a cost: the expert becomes progressively worse at noticing anomalies that fall outside their established patterns.</p>
-        
-        <p>The implications extend far beyond academic pursuits. In medicine, diagnostic errors often stem not from ignorance but from premature closure—the tendency to settle on a diagnosis that fits familiar patterns while ignoring contradictory evidence. In investment, the most successful fund managers are often those who actively seek disconfirming evidence for their own theses.</p>
-        
-        <p>The solution is not to abandon expertise but to complement it with deliberate practices that maintain cognitive flexibility. The ancient ideal of the liberal arts—the education proper to a free person—was designed with precisely this goal. The liberally educated individual would possess not just specialized knowledge but the capacity to think across domains, to question assumptions, and to remain intellectually humble before complexity.</p>`
+    // --- Data Store ---
+    const articles = {
+      'geo-1': {
+        title: 'The Silk Road Reimagined: Infrastructure as Modern Imperium',
+        date: 'December 14, 2024',
+        category: 'Geopolitics',
+        content: `<p class="drop-cap">The contemporary struggle for global influence has shifted from open confrontation to the quiet, persistent construction of connectivity. Where empires once planted flags, they now pour concrete. The Belt and Road Initiative, alongside its counterparts, represents a fundamental shift in how power is projected and sustained.</p>
+        <p>This is not merely economics; it is the geography of future dependence. He who controls the nodes of transit controls the flow of wealth, information, and ultimately, sovereignty. We examine the specific case of the Khorgos Gateway, a dry port on the China-Kazakhstan border that has grown from a dusty checkpoint to a logistical brain in the heart of Eurasia.</p>
+        <p class="article-quote">"Infrastructure is the nervous system of the modern empire, carrying signals of influence and control across vast distances." — Stratfor Analysis</p>
+        <p>Through extensive mapping and on-the-ground reporting, this essay explores the implications for the nations caught in the middle—enticed by investment, yet wary of the strings attached to the marionette's handle. The dry port stands as a monument to a new kind of sovereignty, one measured not in territory, but in tonnage and transit times.</p>`
       },
-      {
-        id: 2,
-        title: "Silicon and Soul: The Hidden Costs of Algorithmic Curation",
-        date: "December 11, 2024",
-        category: "Technology",
-        readTime: "24 min read",
-        summary: "How the mechanisms of content selection shape not just what we see, but who we become—and why the invisible architecture of digital spaces demands greater scrutiny.",
-        content: `<p class="drop-cap">Every day, billions of small decisions are made on our behalf. These decisions—what to show, what to hide, what to amplify—collectively construct the informational environment in which modern consciousness takes shape. Yet the architects of these systems have largely escaped the scrutiny applied to other makers of public space.</p>
-        
-        <p>The physical architecture of cities has long been understood as carrying moral and political implications. Robert Moses's low bridges, designed to prevent buses (and thus poorer, predominantly Black residents) from accessing certain beaches, stand as monuments to how infrastructure can encode prejudice. The digital equivalent—algorithmic curation—operates with far less visibility and even less accountability.</p>
-        
-        <p>The mechanisms are subtle but pervasive. When a platform optimizes for engagement, it necessarily optimizes for certain types of content over others. Content that provokes strong emotional responses—outrage, affirmation, fear—rises to the surface. Nuanced analysis, which by definition resists simple emotional categorization, sinks. The result is not merely a distorted picture of reality but a transformation of the very incentives that govern public discourse.</p>
-        
-        <p class="article-quote">"We shape our tools and thereafter our tools shape us." — Marshall McLuhan</p>
-        
-        <p>Writers, thinkers, and creators respond to these incentives, often unconsciously. The essay that might have taken months of careful research gives way to the hot take that can be produced in hours. The nuanced argument that acknowledges complexity gets less traction than the definitive pronouncement that satisfies the algorithmic hunger for certainty.</p>
-        
-        <p>This transformation occurs not through anyone's malicious intent but through the aggregation of individually rational choices. Platform engineers optimize for metrics they can measure. Users gravitate toward content that provides immediate satisfaction. Creators follow the path of least resistance toward audience-building. No single actor intends to degrade public discourse, yet the collective effect is precisely that.</p>`
+      'eco-1': {
+        title: 'The Cost of Certainty: Central Banking in an Age of Fragility',
+        date: 'December 10, 2024',
+        category: 'Economy',
+        content: `<p class="drop-cap">For decades, the prevailing economic orthodoxy treated the business cycle as a problem to be solved rather than a reality to be endured. Interest rates became the dial by which we tuned the economy, promising a steady hum of growth with only occasional minor adjustments.</p>
+        <p>The post-pandemic era shattered this illusion. Inflation, once thought tamed, returned with a vengeance, revealing the limits of monetary policy in a world disrupted by supply chains and geopolitical friction. This essay argues that the era of the "maestro" central banker is over, replaced by a new age of uncertainty where humility must precede forecasting.</p>
+        <p class="article-quote">"In a complex system, the illusion of control is more dangerous than the admission of ignorance." — N.N. Taleb</p>
+        <p>We analyze the historical precedents, from the Volcker shock to the lost decades of Japan, seeking clues for what comes next in a world where debt is high and trust is low.</p>`
       },
-      {
-        id: 3,
-        title: "The Art of Disappearing: Solitude as Resistance in a Hyperconnected Age",
-        date: "December 8, 2024",
-        category: "Society",
-        readTime: "16 min read",
-        summary: "On the radical act of withdrawal, and what the hermits, recluses, and contemplatives of history understood about the preconditions for genuine thought.",
-        content: `<p class="drop-cap">In an age of ubiquitous connection, the act of disconnection takes on a subversive quality. To be unreachable, to absent oneself from the endless stream of communication, is to violate the unspoken contract of modern existence—the expectation of perpetual availability.</p>
-        
-        <p>The hermits and recluses of earlier eras understood something that we have largely forgotten: that genuine thought requires conditions of separation. The monk's cell, the writer's retreat, the philosopher's garden—these were not mere preferences but methodological necessities. One could not think deeply while remaining perpetually responsive to external demands.</p>
-        
-        <p>Our contemporary skepticism toward solitude reveals itself in the language we use. To "withdraw" carries negative connotations of defeat or dysfunction. The "introvert" is treated as a personality type requiring accommodation rather than a mode of being with its own gifts. The person who turns off their phone, who doesn't check email for days, who resists the pull of social media—they are regarded with suspicion, as if something must be wrong.</p>
-        
-        <p class="article-quote">"The great omission in American life is solitude; not loneliness, for this is an alienation that thrives most in the midst of crowds, but that zone of time and space free from outside pressure." — Marya Mannes</p>
-        
-        <p>Yet the historical record suggests that periods of withdrawal have been essential to creative and intellectual work of the highest order. Emily Dickinson's reclusion, Marcel Proust's cork-lined bedroom, Thomas Merton's monastery—all represent not pathology but a practical wisdom about the conditions under which genuine originality becomes possible.</p>`
-      },
-      {
-        id: 4,
-        title: "Inheritance and Obligation: Rethinking Generational Responsibility",
-        date: "December 4, 2024",
-        category: "Philosophy",
-        readTime: "21 min read",
-        summary: "What do we owe to those who came before, and what do those who come after owe to us? A meditation on the chains of obligation that bind generations together.",
-        content: `<p class="drop-cap">The concept of inheritance extends far beyond material possessions. Each generation receives from its predecessors a world shaped by their decisions—their achievements and their failures, their wisdom and their blindness. This inheritance carries with it an implicit question: what obligations do we bear, both to the past we received and the future we will leave behind?</p>
-        
-        <p>Modern individualism has tended to minimize these intergenerational bonds. The self-made person, beholden to neither ancestors nor descendants, represents an ideal of radical autonomy. Yet this ideal, on examination, proves not only historically ignorant but philosophically incoherent. We are, every one of us, the beneficiaries of choices we did not make and the inheritors of problems we did not create.</p>
-        
-        <p>The conservative tradition has often emphasized obligation to the past—the preservation of inherited wisdom and institutions. The progressive tradition has emphasized obligation to the future—the creation of a more just world for those who will come after. Both capture partial truths while missing the fuller picture of generational responsibility as a continuous chain of reciprocal obligation.</p>
-        
-        <p class="article-quote">"The dead have their rights, the living have their obligations, and the unborn have their hopes." — Edmund Burke (paraphrased)</p>
-        
-        <p>This framework has concrete implications. Environmental stewardship becomes not merely a preference but an obligation to those who will inherit the consequences of our choices. The preservation of cultural heritage becomes not mere nostalgia but the fulfillment of a debt to those whose efforts created what we now enjoy. And our own creative and intellectual work becomes meaningful not just for its immediate effects but as a contribution to an ongoing conversation that transcends any individual lifespan.</p>`
-      },
-      {
-        id: 5,
-        title: "The Map Is Not the Territory: On Models, Reality, and Humility",
-        date: "November 29, 2024",
-        category: "Philosophy",
-        readTime: "19 min read",
-        summary: "How our tools for understanding the world shape—and sometimes distort—what we perceive, and why intellectual humility remains essential even in an age of unprecedented knowledge.",
-        content: `<p class="drop-cap">Alfred Korzybski's famous dictum—that the map is not the territory—was meant as a reminder of the gap between our representations and the reality they represent. Yet in the centuries since map-making became a science, we have increasingly conflated the two, treating our models of reality as reality itself.</p>
-        
-        <p>The problem manifests across domains. In economics, elegant mathematical models have sometimes obscured rather than illuminated the messy realities of human behavior. In psychology, diagnostic categories originally intended as heuristics have become reified, treated as natural kinds rather than useful fictions. In our personal lives, the metrics we use to track success—income, followers, publications—become proxies for the deeper values they were meant to measure.</p>
-        
-        <p>The cartographers of old understood something that modern expertise sometimes forgets: that every map involves choices about what to include and what to omit. These choices reflect not just the territory but the mapmaker's purposes, assumptions, and limitations. The map that shows roads may hide topography; the map that shows political boundaries may obscure ecological ones.</p>
-        
-        <p class="article-quote">"It is the theory which decides what we can observe." — Albert Einstein</p>
-        
-        <p>Our contemporary crisis of expertise can be understood through this lens. When experts present their models as transparent windows onto reality rather than as constructed representations, they invite a backlash when those models inevitably fail to capture some relevant aspect of the world. The appropriate response to model failure is not to abandon modeling but to recover the humility that acknowledges the gap between map and territory.</p>`
+      'pol-1': {
+        title: 'The Hollow Center: The Collapse of the Moderate Consensus',
+        date: 'December 5, 2024',
+        category: 'Internal Politics',
+        content: `<p class="drop-cap">The "center" was never a fixed point, but a coalition of convenience that held together for nearly a century. It promised stability, incremental progress, and a politics devoid of existential risk. Its collapse was not sudden, but the result of a long erosion of trust—trust in institutions, in expertise, and in the very notion of a shared reality.</p>
+        <p>This essay examines the sociological underpinnings of the populist resurgence, moving beyond the easy narratives of "misinformation" to look at the material conditions driving the revolt. When the middle class hollows out, so too does the political middle ground.</p>
+        <p class="article-quote">"The center cannot hold; mere anarchy is loosed upon the world." — W.B. Yeats</p>
+        <p>Through interviews with strategists, voters, and historians, we map the new political geography—one defined not by left versus right, but by insiders versus outsiders.</p>`
       }
-    ];
+    };
 
-    // DOM Elements
-    const articlesContainer = document.getElementById('articlesContainer');
-    const contactBtn = document.getElementById('contactBtn');
-    const contactModal = document.getElementById('contactModal');
-    const closeModalBtn = document.getElementById('closeModal');
-    const modalBackdrop = document.getElementById('modalBackdrop');
-    const modalContent = document.getElementById('modalContent');
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    // --- DOM Elements ---
+    const body = document.body;
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const navButtons = document.querySelectorAll('.nav-btn[data-section]');
+    const menuToggle = document.getElementById('menuToggle');
+    const snapContainer = document.getElementById('snapContainer');
+    const navButtons = document.querySelectorAll('.nav-btn[data-target]');
+    const essayPanel = document.getElementById('essayPanel');
+    const essayContent = document.getElementById('essayContent');
+    const closeEssayBtn = document.getElementById('closeEssay');
 
-    // Render Articles
-    function renderArticles() {
-      articlesContainer.innerHTML = articles.map((article, index) => `
-        <article class="article-card animate-entrance delay-${Math.min(index + 2, 6)}" data-article-id="${article.id}">
-          <div class="flex flex-wrap items-center gap-3 mb-4">
-            <span class="article-tag">${article.category}</span>
-            <span class="font-sans text-xs text-[var(--fg-muted)]">${article.date}</span>
-            <span class="font-sans text-xs text-[var(--fg-muted)]">—</span>
-            <span class="font-sans text-xs text-[var(--accent)]">${article.readTime}</span>
-          </div>
-          
-          <h3 class="text-2xl lg:text-3xl font-semibold leading-snug mb-4 hover:text-[var(--accent)] transition-colors cursor-pointer article-title">
-            ${article.title}
-          </h3>
-          
-          <p class="text-lg text-[var(--fg-muted)] leading-relaxed mb-4">
-            ${article.summary}
-          </p>
-          
-          <div class="article-content" id="content-${article.id}">
-            <div class="prose prose-lg pt-4">
-              ${article.content}
-            </div>
-          </div>
-          
-          <button class="btn-read-more" data-article-id="${article.id}" aria-expanded="false" aria-controls="content-${article.id}">
-            <span class="btn-text">Read Full Essay</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 9l6 6 6-6"/>
-            </svg>
-          </button>
-        </article>
-      `).join('');
+    // --- Initialization ---
+    // Trigger initial sidebar animation
+    setTimeout(() => {
+      sidebar.classList.add('animated');
+    }, 200);
 
-      // Add event listeners to read more buttons
-      document.querySelectorAll('.btn-read-more').forEach(btn => {
-        btn.addEventListener('click', toggleArticle);
+    // Trigger intro animation immediately
+    document.getElementById('intro').classList.add('section-in-view');
+
+    // --- Intersection Observer for Snap Scroll ---
+    const sections = document.querySelectorAll('.snap-section');
+    const observerOptions = {
+      root: snapContainer,
+      threshold: 0.5
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // Trigger animations inside the section
+          entry.target.classList.add('section-in-view');
+          
+          // Update nav active state
+          const id = entry.target.id;
+          navButtons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.target === id) {
+              btn.classList.add('active');
+            }
+          });
+        }
       });
+    }, observerOptions);
 
-      // Add event listeners to article titles
-      document.querySelectorAll('.article-title').forEach(title => {
-        title.addEventListener('click', (e) => {
-          const articleCard = e.target.closest('.article-card');
-          const articleId = articleCard.dataset.articleId;
-          const btn = articleCard.querySelector('.btn-read-more');
-          btn.click();
-        });
-      });
-    }
+    sections.forEach(section => observer.observe(section));
 
-    // Toggle Article Expansion
-    function toggleArticle(e) {
-      const btn = e.currentTarget;
-      const articleId = btn.dataset.articleId;
-      const content = document.getElementById(`content-${articleId}`);
-      const isExpanded = content.classList.contains('expanded');
-
-      content.classList.toggle('expanded');
-      btn.classList.toggle('expanded');
-      btn.setAttribute('aria-expanded', !isExpanded);
-      btn.querySelector('.btn-text').textContent = isExpanded ? 'Read Full Essay' : 'Collapse Essay';
-    }
-
-    // Modal Functions
-    function openModal() {
-      contactModal.classList.remove('opacity-0', 'pointer-events-none');
-      contactModal.classList.add('opacity-100');
-      modalContent.classList.remove('scale-95');
-      modalContent.classList.add('scale-100');
-      document.body.style.overflow = 'hidden';
-      closeModalBtn.focus();
-    }
-
-    function closeModal() {
-      contactModal.classList.add('opacity-0', 'pointer-events-none');
-      contactModal.classList.remove('opacity-100');
-      modalContent.classList.add('scale-95');
-      modalContent.classList.remove('scale-100');
-      document.body.style.overflow = '';
-      contactBtn.focus();
-    }
-
-    // Mobile Menu Functions
-    function toggleMobileMenu() {
-      const isOpen = sidebar.classList.contains('open');
-      sidebar.classList.toggle('open');
-      sidebarOverlay.classList.toggle('open');
-      mobileMenuBtn.setAttribute('aria-expanded', !isOpen);
-    }
-
-    // Intersection Observer for scroll animations
-    function setupScrollObserver() {
-      const observerOptions = {
-        root: null,
-        rootMargin: '0px',
-        threshold: 0.1
-      };
-
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-          }
-        });
-      }, observerOptions);
-
-      document.querySelectorAll('.article-card').forEach(card => {
-        observer.observe(card);
-      });
-    }
-
-    // Event Listeners
-    contactBtn.addEventListener('click', openModal);
-    closeModalBtn.addEventListener('click', closeModal);
-    modalBackdrop.addEventListener('click', closeModal);
-
-    contactModal.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeModal();
-      }
-    });
-
-    mobileMenuBtn.addEventListener('click', toggleMobileMenu);
-    sidebarOverlay.addEventListener('click', toggleMobileMenu);
-
-    // Navigation buttons
+    // --- Navigation Logic ---
     navButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        navButtons.forEach(b => {
-          b.classList.remove('active');
-          b.removeAttribute('aria-current');
-        });
-        btn.classList.add('active');
-        btn.setAttribute('aria-current', 'page');
-        
-        // Close mobile menu if open
-        if (sidebar.classList.contains('open')) {
-          toggleMobileMenu();
+      btn.addEventListener('click', (e) => {
+        const targetId = e.currentTarget.dataset.target;
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          targetEl.scrollIntoView({ behavior: 'smooth' });
+          closeMobileMenu();
         }
       });
     });
 
-    // Keyboard navigation
+    // --- Sidebar Logic ---
+    function toggleSidebar() {
+      const isDesktop = window.innerWidth > 1023;
+      if (isDesktop) {
+        body.classList.toggle('sidebar-collapsed');
+      } else {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('open');
+      }
+    }
+
+    function closeMobileMenu() {
+      if (window.innerWidth < 1024) {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('open');
+      }
+    }
+
+    menuToggle.addEventListener('click', toggleSidebar);
+    sidebarOverlay.addEventListener('click', closeMobileMenu);
+
+    // --- Essay Sliding Logic ---
+    document.querySelectorAll('[data-article]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.article;
+        const data = articles[id];
+        if (data) {
+          essayContent.innerHTML = `
+            <div class="max-w-2xl">
+              <span class="font-sans text-xs text-[var(--accent)] tracking-widest uppercase">${data.category}</span>
+              <h2 class="text-4xl lg:text-5xl font-semibold mt-4 mb-6 leading-tight">${data.title}</h2>
+              <p class="font-sans text-xs text-[var(--fg-muted)] mb-8">${data.date}</p>
+              <div class="text-xl leading-relaxed text-[var(--fg-muted)]">
+                ${data.content}
+              </div>
+            </div>
+          `;
+          body.classList.add('essay-open');
+          essayPanel.setAttribute('aria-hidden', 'false');
+          closeEssayBtn.focus();
+        }
+      });
+    });
+
+    function closeEssay() {
+      body.classList.remove('essay-open');
+      essayPanel.setAttribute('aria-hidden', 'true');
+    }
+
+    closeEssayBtn.addEventListener('click', closeEssay);
+    
+    // Close essay on ESC key
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && sidebar.classList.contains('open')) {
-        toggleMobileMenu();
+      if (e.key === 'Escape' && body.classList.contains('essay-open')) {
+        closeEssay();
       }
     });
 
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      renderArticles();
-      setupScrollObserver();
-    });
   </script>
 </body>
 </html>
